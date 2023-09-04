@@ -1,0 +1,20 @@
+distChangeTest/
+songPeriodTest/
+Demo/
+*.txt
+
+# audio files
+*.wav
+*.mp3
+
+# config files
+*.ini
+
+# data files
+*.bin
+*.json
+*.mat
+*.zip
+
+# temporary files
+*.pkf
