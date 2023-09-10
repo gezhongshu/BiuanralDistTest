@@ -1,14 +1,10 @@
-% global HRTF fs Nf Nw Nfft distance;
-% hrdb = load('../../../library/HRTF/PKU/hrir_small_44100.mat');
-% hrdb = hrdb.hrirDb;
-% hrir = hrdb.hrir;
-% distance = hrdb.dist/100;
-% fs = hrdb.fs;
-% Nf = 2^9;
-% Nw = 2^7;
-% len = size(hrir, 1);
-% Nfft = len+Nf+Nw; 
-% HRTF = fft(hrir, Nfft);
+global fs Nf Nw Nfft;
+info = HRIRInfo('PKU', '../../../library/HRTF/');
+fs = info.fs;
+len = info.len;
+Nf = 2^9;
+Nw = 2^7;
+Nfft = len+Nf+Nw; 
 % 
 % wavIn = audioread('Die For You.mp3');
 % wavIn = mean(wavIn, 2);

@@ -1,5 +1,5 @@
 function wav = BinauralDistRenderer(filenames, pos, timeTag)
-global HRTF fs Nf Nw Nfft distance;
+global fs Nf Nw Nfft;
 
 if(~iscell(filenames))
     filenames = {filenames};
@@ -14,35 +14,18 @@ for in = 1:length(filenames)
     end
     [wavFrame, nframe] = wav2frame(wavIn, Nf, Nw);
     HRTFs = zeros(Nfft, 2, nframe);
+    rr = zeros(nframe, 1);
+    azs = zeros(nframe, 1);
+    els = zeros(nframe, 1);
     for fi = 1:nframe
         [r, az, el] = insertPos(pos, timeTag, fi*Nf/fs);
-        if(r<distance(1))
-            r =  distance(1);
-        elseif(r>distance(end))
-            r = distance(end);
-        end
-        for ir = 1:length(distance)-1
-            if(r<=distance(ir+1))
-                break;
-            end
-        end
-        cr1 = (distance(ir+1) - r)/(distance(ir+1) - distance(ir));
-        cr2 = 1 - cr1;
-        ia = floor(az/5)+1;
-        ca2 = az/5 - ia + 1;
-        ca1 = 1 - ca2;
-        ie = floor(el/10)+10;
-        ce2 = el/10 + 10 - ie;
-        ce1 = 1 - ce2;
-        HRTFs(:, 1, fi) = HRTF(:, 1, ie, ia, ir)*ce1*ca1*cr1 + HRTF(:, 1, ie+1, ia, ir)*ce2*ca1*cr1 ...
-            + HRTF(:, 1, ie, ia+1, ir)*ce1*ca2*cr1 + HRTF(:, 1, ie+1, ia+1, ir)*ce2*ca2*cr1 ...
-            + HRTF(:, 1, ie, ia, ir+1)*ce1*ca1*cr2 + HRTF(:, 1, ie+1, ia, ir+1)*ce2*ca1*cr2 ...
-            + HRTF(:, 1, ie, ia+1, ir+1)*ce1*ca2*cr2 + HRTF(:, 1, ie+1, ia+1, ir+1)*ce2*ca2*cr2;
-        HRTFs(:, 2, fi) = HRTF(:, 2, ie, ia, ir)*ce1*ca1*cr1 + HRTF(:, 2, ie+1, ia, ir)*ce2*ca1*cr1 ...
-            + HRTF(:, 2, ie, ia+1, ir)*ce1*ca2*cr1 + HRTF(:, 2, ie+1, ia+1, ir)*ce2*ca2*cr1 ...
-            + HRTF(:, 2, ie, ia, ir+1)*ce1*ca1*cr2 + HRTF(:, 2, ie+1, ia, ir+1)*ce2*ca1*cr2 ...
-            + HRTF(:, 2, ie, ia+1, ir+1)*ce1*ca2*cr2 + HRTF(:, 2, ie+1, ia+1, ir+1)*ce2*ca2*cr2;
+        rr(fi) = r;
+        azs(fi) = az;
+        els(fi) = el;
     end
+    [HL, HR] = extractHRTF(rr, azs, els, Nfft, 'PKU', '../../../library/HRTF/');
+    HRTFs(:, 1, :) = HL;
+    HRTFs(:, 2, :) = HR;
     wavFrameLR = real(ifft(repmat(fft(wavFrame, Nfft), 1, 2).*HRTFs));
     wav{in} = frame2wav(wavFrameLR, Nf);
 end

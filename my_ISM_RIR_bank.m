@@ -94,10 +94,13 @@ VarList = {'Delta_dB'       50;         % maximum attenuation in RIR computation
            'SilentFlag'     0};         % set to 1 to disable on-screen messages
 eval(SetUserVars(VarList,varargin));    % set user-definable variables
 
+if(~isdir('./RIRs/')),
+    mkdir('./RIRs/');
+end
 if isfield(setupstruc,'T60'),
-    RIRFileName = ['../RIRs/rir', sprintf('_%.1f', setupstruc.room, setupstruc.mic_pos - setupstruc.src_traj, setupstruc.T60), '.bin'];
+    RIRFileName = ['./RIRs/rir', sprintf('_%.1f', setupstruc.room, setupstruc.mic_pos - setupstruc.src_traj, setupstruc.T60), '.bin'];
 elseif isfield(setupstruc,'T20'),
-    RIRFileName = ['../RIRs/rir', sprintf('_%.1f', setupstruc.room, setupstruc.mic_pos - setupstruc.src_traj, setupstruc.T60), '.bin'];
+    RIRFileName = ['./RIRs/rir', sprintf('_%.1f', setupstruc.room, setupstruc.mic_pos - setupstruc.src_traj, setupstruc.T20), '.bin'];
 else
     error('Missing T60 or T20 field.');
 end

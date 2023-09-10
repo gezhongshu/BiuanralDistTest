@@ -1,6 +1,7 @@
 distChangeTest/
 songPeriodTest/
 Demo/
+RIR/
 *.txt
 
 # audio files
