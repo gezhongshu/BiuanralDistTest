@@ -21,15 +21,15 @@ function [HRTF_l, HRTF_r, fs, RR, azs, els] = extractHRTF(rr, azims, elevs, NFFT
     end
     
     % define global variables to store the HRTFs to avoid loading them again
-    global HRTF_L HRTF_R loaded dbname_old azimuths elevations distances FFTlen fs_db
+    global HRTF_L HRTF_R loadedF dbname_old azimuths elevations distances FFTlen fs_db
     
     % check if the database is changed
-    if isempty(loaded) || ~strcmp(dbname, dbname_old) || FFTlen ~= NFFT
-        loaded = false;
+    if isempty(loadedF) || ~strcmp(dbname, dbname_old) || FFTlen ~= NFFT
+        loadedF = false;
     end
     
     % load HRIRs if not loaded
-    if ~loaded
+    if ~loadedF
         switch upper(dbname(1))
             case 'P' % 'PKU-IOA'
                 try 
@@ -41,7 +41,7 @@ function [HRTF_l, HRTF_r, fs, RR, azs, els] = extractHRTF(rr, azims, elevs, NFFT
                         error('Cannot find the HRIR database!');
                     end
                 end
-                hrir_obj = hrir_obj.hriDb;
+                hrir_obj = hrir_obj.hrirDb;
                 HRIR_L = squeeze(hrir_obj.hrir(:, 1, :));
                 HRIR_R = squeeze(hrir_obj.hrir(:, 2, :));
                 fs_db = hrir_obj.fs;
@@ -63,7 +63,7 @@ function [HRTF_l, HRTF_r, fs, RR, azs, els] = extractHRTF(rr, azims, elevs, NFFT
                 HRIR_L = hrir_obj.irChOne;
                 HRIR_R = hrir_obj.irChTwo;
                 fs_db = hrir_obj.fs;
-                azimuths = hrir_obj.azimuths;
+                azimuths = hrir_obj.azimuth;
                 elevations = pi/2 - hrir_obj.elevation;
                 distances = hrir_obj.sourceDistance*ones(size(azimuths));
             case 'F' % 'FABIAN'
@@ -75,23 +75,26 @@ function [HRTF_l, HRTF_r, fs, RR, azs, els] = extractHRTF(rr, azims, elevs, NFFT
                 HRIR_L = hrir_obj.HRIR_L;
                 HRIR_R = hrir_obj.HRIR_R;
                 fs_db = 44100;
-                azimuths = hrir_obj.azimuth;
-                elevations = hrir_obj.elevation;
+                azimuths = hrir_obj.azimuth * pi / 180;
+                elevations = hrir_obj.elevation * pi / 180;
                 distances = 1*ones(size(azimuths));
             otherwise
                 error('Unknown database!');
         end
         HRTF_L = fft(HRIR_L, NFFT, 1);
         HRTF_R = fft(HRIR_R, NFFT, 1);
-        loaded = true;
+        loadedF = true;
         dbname_old = dbname;
         FFTlen = NFFT;
     end
     
     % find the closest match
-    AED = repmat(azimuths*1e6 + elevations*1e3 + distances, length(rr), 1);
-    aed = repmat(azims*1e6 + elevs*1e3 + rr, 1, size(AED, 2));
-    [~, idx] = min(abs(AED - aed), [], 2);
+    AED = repmat(cat(3, azimuths, elevations, distances), length(rr), 1);
+    aed = repmat(cat(3, azims, elevs, rr), 1, size(AED, 2));
+    diff = abs(AED - aed);
+    md = min(diff, [], 2);
+    [idx, ~] = find(all(diff == repmat(md, 1, size(diff, 2)), 3)');
+
     HRTF_l = permute(HRTF_L(:, idx), [1, 3, 2]);
     HRTF_r = permute(HRTF_R(:, idx), [1, 3, 2]);
     fs = fs_db;

@@ -19,3 +19,5 @@ RIR/
 
 # temporary files
 *.pkf
+*.asv
+*.m~

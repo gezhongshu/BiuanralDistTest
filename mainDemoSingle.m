@@ -14,7 +14,7 @@ outpath = './Demo/';
 wavIn = audioread('Die For You.wav');
 rlen = 2^14;
 NRf = 2^14;
-NRw = 1;
+NRw = 2^9;
 fftLen = NRf + NRw + rlen - 1;
 
 [pos, timeTag] = pos_die_for_you();
@@ -28,7 +28,7 @@ RTFs = zeros(fftLen, 2, nframe);
 for i = 1:nframe
     tframe = (i-0.5)*NRf/fs;
     [r, ~, ~] = insertPos(pos, timeTag, tframe);
-    [direct, delays, reverb] = interpRIR(2.5, rirType);
+    [direct, delays, reverb] = interpRIR(r, rirType);
     
     if(strcmp(parts, 'L'))
         reverb(delays) = 0;

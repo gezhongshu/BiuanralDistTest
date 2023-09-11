@@ -21,16 +21,16 @@ if nargin < 4
 end
 
 % define global variables to store the HRIRs to avoid loading them again
-global HRIR_L HRIR_R loaded dbname_old azimuths elevations distances hlen fs_db
+global HRIR_L HRIR_R loadedT dbname_old azimuths elevations distances fs_db
 
 % check if the database is changed
-if isempty(loaded) || ~strcmp(dbname, dbname_old)
-    loaded = false;
+if isempty(loadedT) || ~strcmp(dbname, dbname_old)
+    loadedT = false;
     dbname_old = dbname;
 end
 
 % load HRIRs if not loaded
-if ~loaded
+if ~loadedT
     switch upper(dbname(1))
         case 'P' % 'PKU-IOA'
             try 
@@ -42,10 +42,9 @@ if ~loaded
                     error('Cannot find the HRIR database!');
                 end
             end
-            hrir_obj = hrir_obj.hriDb;
+            hrir_obj = hrir_obj.hrirDb;
             HRIR_L = squeeze(hrir_obj.hrir(:, 1, :));
             HRIR_R = squeeze(hrir_obj.hrir(:, 2, :));
-            hlen = size(HRIR_L, 1);
             fs_db = hrir_obj.fs;
             elev = hrir_obj.elevation * pi / 180;
             azim = hrir_obj.azimuth * pi / 180;
@@ -64,9 +63,8 @@ if ~loaded
             hrir_obj = hrir_obj.HRIR_FULL2DEG;
             HRIR_L = hrir_obj.irChOne;
             HRIR_R = hrir_obj.irChTwo;
-            hlen = size(HRIR_L, 1);
             fs_db = hrir_obj.fs;
-            azimuths = hrir_obj.azimuths;
+            azimuths = hrir_obj.azimuth;
             elevations = pi/2 - hrir_obj.elevation;
             distances = hrir_obj.sourceDistance*ones(size(azimuths));
         case 'F' % 'FABIAN'
@@ -77,21 +75,24 @@ if ~loaded
             end
             HRIR_L = hrir_obj.HRIR_L;
             HRIR_R = hrir_obj.HRIR_R;
-            hlen = size(HRIR_L, 1);
             fs_db = 44100;
-            azimuths = hrir_obj.azimuth;
-            elevations = hrir_obj.elevation;
+            azimuths = hrir_obj.azimuth * pi / 180;
+            elevations = hrir_obj.elevation * pi / 180;
             distances = 1*ones(size(azimuths));
         otherwise
             error('Unknown database!');
     end
-    loaded = true;
+    loadedT = true;
+    dbname_old = dbname;
 end
 
 % find the closest match
-AED = repmat(azimuths*1e6 + elevations*1e3 + distances, length(rr), 1);
-aed = repmat(azims*1e6 + elevs*1e3 + rr, 1, size(AED, 2));
-[~, idx] = min(abs(AED - aed), [], 2);
+AED = repmat(cat(3, azimuths, elevations, distances), length(rr), 1);
+aed = repmat(cat(3, azims, elevs, rr), 1, size(AED, 2));
+diff = abs(AED - aed);
+md = min(diff, [], 2);
+[idx, ~] = find(all(diff == repmat(md, 1, size(diff, 2)), 3)');
+
 hrir_l = permute(HRIR_L(:, idx), [1, 3, 2]);
 hrir_r = permute(HRIR_R(:, idx), [1, 3, 2]);
 fs = fs_db;
